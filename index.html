@@ -1341,28 +1341,10 @@
     /* ==========================================================================
        1. LOCK SCREEN
        ========================================================================== */
-    const pinTextInput = document.getElementById('pin-text-input');
+  const pinTextInput = document.getElementById('pin-text-input');
     document.getElementById('lock-host-input').value = getApiBase();
     document.getElementById('set-local-ip').value = getApiBase();
-    setTimeout(() => pinTextInput.focus(), 100);
 
-    document.addEventListener('keydown', (e) => {
-    if (document.getElementById('lock-screen').classList.contains('hidden')) return;
-    if (document.activeElement === document.getElementById('lock-host-input')) return;
-    if (document.activeElement === pinTextInput) return;
-
-    if (/^[0-9]$/.test(e.key)) {
-      e.preventDefault();
-      appendPin(e.key);
-    } else if (e.key === 'Backspace') {
-      e.preventDefault();
-      popPin();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      submitUnlock();
-    }
-  });
-    
     function updatePinUI() {
       const dots = document.querySelectorAll('#pin-dots-bar .pin-dot');
       dots.forEach((d, idx) => d.classList.toggle('filled', idx < state.pinEntry.length));
@@ -1379,13 +1361,24 @@
     function popPin() { state.pinEntry = state.pinEntry.slice(0, -1); updatePinUI(); }
     function resetPin() { state.pinEntry = ''; updatePinUI(); }
 
-    pinTextInput.addEventListener('input', () => {
-      state.pinEntry = pinTextInput.value.replace(/\D/g, '').slice(0, 4);
-      updatePinUI();
-      if (state.pinEntry.length === 4) submitUnlock();
-    });
+    window.addEventListener('keydown', (e) => {
+      if (document.getElementById('lock-screen').classList.contains('hidden')) return;
+      if (document.activeElement === document.getElementById('lock-host-input')) return;
 
-    pinTextInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitUnlock(); });
+      const numpadMatch = e.code && e.code.match(/^Numpad([0-9])$/);
+      const digit = numpadMatch ? numpadMatch[1] : (/^[0-9]$/.test(e.key) ? e.key : null);
+
+      if (digit !== null) {
+        e.preventDefault();
+        appendPin(digit);
+      } else if (e.key === 'Backspace' || e.code === 'Backspace') {
+        e.preventDefault();
+        popPin();
+      } else if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+        e.preventDefault();
+        submitUnlock();
+      }
+    }, true);
 
     function setTargetHost(url) {
       document.getElementById('lock-host-input').value = url;
