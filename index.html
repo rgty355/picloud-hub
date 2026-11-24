@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PiCloud Hub V20 — Console Serveur Raspberry Pi 3B</title>
+  <style>
+    :root {
+      --bg-void: #060811;
+      --bg-surface: #0c1020;
+      --bg-card: rgba(14, 19, 36, 0.92);
+      --bg-card-elevated: rgba(20, 27, 49, 0.96);
+      --bg-sidebar: #090d1a;
+      --border-subtle: rgba(255, 255, 255, 0.075);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --border-accent: rgba(56, 189, 248, 0.38);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-sky: #38bdf8;
+      --accent-indigo: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --spring: cubic-bezier(0.22, 1, 0.36, 1);
+      --spring-bounce: cubic-bezier(0.34, 1.45, 0.64, 1);
+      --sb-collapsed: 76px;
+      --sb-expanded: 260px;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .ambient-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      transform: translateZ(0);
+      background:
+        radial-gradient(900px circle at 8% 12%, rgba(99, 102, 241, 0.14), transparent 55%),
+        radial-gradient(850px circle at 92% 88%, rgba(6, 182, 212, 0.12), transparent 55%),
+        linear-gradient(180deg, #060811 0%, #080b16 100%);
+    }
+
+    .hidden { display: none !important; }
+
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.22); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.45); }
+
+    /* ==========================================================================
+       LOCK SCREEN
+       ========================================================================== */
+    #lock-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(5, 7, 15, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: opacity 0.26s var(--spring), transform 0.26s var(--spring);
+      will-change: opacity, transform;
+    }
+
+    #lock-screen.unlocking {
+      opacity: 0;
+      transform: scale(1.02);
+      pointer-events: none;
+    }
+
+    .lock-panel {
+      width: 100%;
+      max-width: 780px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.82), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .lock-left {
+      padding: 32px;
+      background: linear-gradient(155deg, rgba(19, 26, 48, 0.95), rgba(10, 14, 27, 0.98));
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .lock-right {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .brand-row { display: flex; align-items: center; gap: 14px; }
+
+    .brand-emblem {
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, var(--accent-sky), var(--accent-indigo));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.3);
+      flex-shrink: 0;
+    }
+
+    .spec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(6, 9, 19, 0.65);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 12.5px;
+    }
+
+    .spec-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+    }
+
+    .spec-item strong {
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .input-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .host-chips button {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      color: var(--accent-sky);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+
+    .host-chips button:hover { background: rgba(56, 189, 248, 0.24); }
+
+    .ctrl-input {
+      width: 100%;
+      height: 40px;
+      background: rgba(6, 9, 19, 0.94);
+      border: 1px solid var(--border-strong);
+      border-radius: 11px;
+      padding: 0 13px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+
+    .ctrl-input:focus { border-color: var(--accent-sky); }
+
+    .pin-dots-bar {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 14px 0 8px;
+    }
+
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.24);
+      transition: transform 0.16s var(--spring), background 0.16s, border-color 0.16s;
+    }
+
+    .pin-dot.filled {
+      background: var(--accent-sky);
+      border-color: var(--accent-sky);
+      transform: scale(1.18);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+    }
+
+    .compact-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin: 12px 0 14px;
+    }
+
+    .kp-key {
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.14s, transform 0.1s;
+    }
+
+    .kp-key:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.3); }
+    .kp-key:active { transform: scale(0.96); }
+    .kp-key.muted { font-size: 11.5px; color: var(--text-secondary); }
+
+    .btn-primary-gradient {
+      width: 100%;
+      height: 42px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+      transition: filter 0.18s, transform 0.14s var(--spring);
+    }
+
+    .btn-primary-gradient:hover { filter: brightness(1.08); }
+    .btn-primary-gradient:active { transform: scale(0.985); }
+
+    @keyframes shakeX {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-7px); }
+      75% { transform: translateX(7px); }
+    }
+    .shake { animation: shakeX 0.25s ease-in-out; }
+
+    /* ==========================================================================
+       SIDEBAR & WORKSPACE
+       ========================================================================== */
+    #workspace {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    #sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: var(--sb-expanded);
+      flex-shrink: 0;
+      background: linear-gradient(180deg, rgba(11, 16, 33, 0.96) 0%, rgba(7, 10, 22, 0.98) 100%);
+      border-right: 1px solid var(--border-subtle);
+      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45), inset -1px 0 0 rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 14px;
+      transition: width 0.28s var(--spring), padding 0.28s var(--spring);
+      will-change: width;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      contain: layout style;
+      z-index: 30;
+    }
+
+    #sidebar.collapsed {
+      width: var(--sb-collapsed);
+      padding: 16px 0;
+    }
+
+    .sb-top-group { display: flex; flex-direction: column; gap: 14px; }
+
+    .sb-brand-bar {
+      position: relative;
+      width: 100%;
+      height: 94px;
+      flex-shrink: 0;
+    }
+
+    .sb-logo-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: left 0.28s var(--spring), transform 0.28s var(--spring);
+    }
+
+    #sidebar.collapsed .sb-logo-wrap {
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      gap: 0;
+    }
+
+    .box-44 {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-gradient {
+      background: linear-gradient(135deg, var(--accent-sky), var(--accent-indigo));
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(56, 189, 248, 0.28);
+      transition: transform 0.28s var(--spring-bounce), box-shadow 0.28s var(--spring);
+    }
+
+    .sb-logo-wrap:hover .logo-gradient {
+      transform: scale(1.07) rotate(-4deg);
+      box-shadow: 0 10px 24px rgba(56, 189, 248, 0.45);
+    }
+
+    .collapse-btn {
+      position: absolute;
+      top: 5px;
+      right: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: top 0.28s var(--spring), right 0.28s var(--spring), width 0.28s var(--spring), height 0.28s var(--spring), transform 0.28s var(--spring), background 0.18s, color 0.18s;
+    }
+
+    .collapse-btn:hover { background: rgba(56, 189, 248, 0.16); color: #fff; border-color: var(--border-accent); }
+    .collapse-btn svg { transition: transform 0.28s var(--spring); }
+
+    #sidebar.collapsed .collapse-btn {
+      top: 52px;
+      right: 50%;
+      width: 42px;
+      height: 34px;
+      transform: translate3d(50%, 0, 0);
+    }
+
+    #sidebar.collapsed .collapse-btn svg { transform: rotate(180deg); }
+
+    .sb-label {
+      white-space: nowrap;
+      transition: opacity 0.16s ease, transform 0.22s var(--spring);
+      transform-origin: left center;
+    }
+
+    #sidebar.collapsed .sb-label {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .sb-nav { position: relative; display: flex; flex-direction: column; gap: 8px; }
+
+    #active-pill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 46px;
+      border-radius: 13px;
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.28), rgba(6, 182, 212, 0.16));
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 6px 22px rgba(6, 182, 212, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      transition: transform 0.34s var(--spring-bounce), width 0.28s var(--spring), left 0.28s var(--spring);
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    #active-pill::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      top: 10px;
+      bottom: 10px;
+      width: 3.5px;
+      border-radius: 0 4px 4px 0;
+      background: linear-gradient(180deg, var(--accent-sky), var(--accent-indigo));
+      box-shadow: 0 0 12px var(--accent-sky);
+    }
+
+    #sidebar:not(.collapsed) #active-pill { transform: translate3d(0, var(--pill-y, 0px), 0); }
+
+    #sidebar.collapsed #active-pill {
+      width: 44px;
+      left: 50%;
+      right: auto;
+      transform: translate3d(-50%, var(--pill-y, 0px), 0);
+    }
+
+    .nav-item {
+      position: relative;
+      z-index: 1;
+      height: 46px;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.18s, transform 0.22s var(--spring);
+    }
+
+    .nav-item-left { display: flex; align-items: center; gap: 10px; }
+
+    #sidebar.collapsed .nav-item {
+      width: 44px;
+      height: 46px;
+      margin: 0 auto;
+      padding: 0;
+      justify-content: center;
+    }
+
+    #sidebar.collapsed .nav-item-left {
+      width: 44px;
+      height: 46px;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .kbd-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    .nav-item:hover { color: #fff; transform: translate3d(3px, 0, 0); }
+    .nav-item.active { color: #fff; }
+    .nav-item:hover svg, .nav-item.active svg { transform: scale(1.1); filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.55)); }
+    #sidebar.collapsed .nav-item:hover { transform: scale(1.06); }
+
+    #sidebar.collapsed .nav-item::after,
+    #sidebar.collapsed .sb-lock-btn::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 58px;
+      top: 50%;
+      transform: translateY(-50%) translateX(-4px);
+      background: #0f162c;
+      border: 1px solid var(--border-accent);
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 6px 11px;
+      border-radius: 9px;
+      opacity: 0;
+      pointer-events: none;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+      transition: opacity 0.15s, transform 0.15s var(--spring);
+      z-index: 60;
+    }
+
+    #sidebar.collapsed .nav-item:hover::after,
+    #sidebar.collapsed .sb-lock-btn:hover::after {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    .sb-bottom-group { display: flex; flex-direction: column; gap: 10px; }
+
+    .sb-conn-box {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-subtle);
+      border-radius: 13px;
+      padding: 10px 12px;
+      font-size: 11.5px;
+    }
+
+    .dot-live {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .dot-live.offline {
+      background: var(--accent-rose);
+      box-shadow: 0 0 8px var(--accent-rose);
+    }
+
+    .sb-lock-btn {
+      position: relative;
+      height: 44px;
+      width: 100%;
+      border-radius: 13px;
+      border: 1px solid rgba(244, 63, 94, 0.25);
+      background: rgba(244, 63, 94, 0.08);
+      color: #fda4af;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.16s;
+    }
+
+    .sb-lock-btn:hover { background: rgba(244, 63, 94, 0.16); }
+
+    #sidebar.collapsed .sb-lock-btn {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto;
+      padding: 0;
+      justify-content: center;
+      gap: 0;
+    }
+
+    /* ==========================================================================
+       MAIN VIEWPORT & CARDS
+       ========================================================================== */
+    .main-viewport {
+      flex: 1;
+      min-width: 0;
+      padding: 20px 26px 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .desktop-topbar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .topbar-heading h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.015em; }
+    .topbar-heading p { font-size: 12.5px; color: var(--text-secondary); }
+    .topbar-metrics { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--border-subtle);
+      color: #cbd5e1;
+    }
+
+    .pill-badge.sky { color: var(--accent-sky); border-color: rgba(56, 189, 248, 0.28); background: rgba(56, 189, 248, 0.08); }
+    .pill-badge.emerald { color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.28); background: rgba(16, 185, 129, 0.08); }
+    .pill-badge.indigo { color: #a5b4fc; border-color: rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.12); }
+    .pill-badge.rose { color: #fda4af; border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.12); }
+    .pill-badge.amber { color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12); }
+
+    .panel-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 20px;
+      transition: transform 0.26s var(--spring), border-color 0.22s, box-shadow 0.26s var(--spring);
+    }
+
+    .panel-card:hover {
+      border-color: rgba(56, 189, 248, 0.26);
+      transform: translate3d(0, -2px, 0);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+    }
+
+    .view-section { display: flex; flex-direction: column; gap: 18px; }
+
+    /* ==========================================================================
+       BANDEAU DISQUES & EXPLORATEUR
+       ========================================================================== */
+    .cloud-banner-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 270px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .drive-banner-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 13px 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      transition: border-color 0.2s, background 0.2s, transform 0.24s var(--spring-bounce);
+    }
+
+    .drive-banner-card.active { border-color: var(--border-accent); background: rgba(18, 26, 48, 0.96); }
+    .drive-banner-card.active-backup { border-color: rgba(16, 185, 129, 0.45); background: rgba(16, 32, 36, 0.96); }
+    .drive-banner-card:hover { transform: translate3d(0, -2px, 0); border-color: rgba(255, 255, 255, 0.18); }
+
+    .drive-banner-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .drive-banner-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+
+    .bar-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-sky), var(--accent-indigo));
+      border-radius: 999px;
+      transition: width 0.35s var(--spring);
+    }
+
+    .bar-fill.emerald { background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan)); }
+
+    .dropzone-compact {
+      border: 1.5px dashed rgba(56, 189, 248, 0.34);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(56, 189, 248, 0.04);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      transition: background 0.16s, border-color 0.16s;
+    }
+
+    .dropzone-compact:hover, .dropzone-compact.dragover {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: var(--accent-sky);
+    }
+
+    .explorer-full-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px 20px;
+      width: 100%;
+    }
+
+    .explorer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn-tool {
+      height: 34px;
+      padding: 0 13px;
+      border-radius: 9px;
+      border: 1px solid var(--border-strong);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn-tool:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.4); }
+    .btn-tool.primary { background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan)); border: none; }
+    .btn-tool.primary:hover { filter: brightness(1.08); }
+
+    .crumb-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 7px 12px;
+      background: rgba(6, 9, 19, 0.78);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .crumb-links-wrap { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .crumb-link { background: none; border: none; color: var(--accent-sky); font-weight: 700; cursor: pointer; font-size: 12px; }
+    .crumb-link:hover { text-decoration: underline; }
+
+    .file-table-wrap { width: 100%; overflow-x: auto; }
+    table.file-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    table.file-table th {
+      padding: 8px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 700;
+    }
+    table.file-table td {
+      padding: 7px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: middle;
+    }
+    table.file-table tr.data-row:hover { background: rgba(56, 189, 248, 0.085); }
+
+    .name-cell { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: var(--text-primary); }
+    .name-cell:hover .file-title-txt { color: var(--accent-sky); }
+
+    .type-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      background: rgba(99, 102, 241, 0.14);
+      border: 1px solid rgba(99, 102, 241, 0.28);
+    }
+
+    .type-icon.dir { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.3); }
+    .row-actions { display: flex; justify-content: flex-end; gap: 6px; }
+
+    .mini-btn {
+      height: 26px;
+      padding: 0 9px;
+      border-radius: 7px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mini-btn:hover { background: rgba(56, 189, 248, 0.18); color: #fff; }
+    .mini-btn.danger:hover { background: rgba(244, 63, 94, 0.22); color: #fda4af; border-color: rgba(244, 63, 94, 0.35); }
+
+    /* ==========================================================================
+       STATISTIQUES & PARAMÈTRES
+       ========================================================================== */
+    .kpi-4-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .kpi-value-big { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 6px 0; }
+    .analytics-2-grid { display: grid; grid-template-columns: 1.45fr 1fr; gap: 18px; }
+    .storage-breakdown { display: flex; align-items: center; gap: 24px; margin-top: 14px; }
+    .settings-2-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .field-stack { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; }
+    .field-stack label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+    .btn-warn { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.38); color: #fcd34d; }
+    .btn-danger { background: rgba(244, 63, 94, 0.15); border-color: rgba(244, 63, 94, 0.38); color: #fda4af; }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      background: rgba(4, 6, 14, 0.82);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-dialog {
+      width: 100%;
+      max-width: 480px;
+      background: #0d1324;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85);
+    }
+
+    #toast-stack {
+      position: fixed;
+      bottom: 20px;
+      right: 22px;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+    }
+
+    .toast-msg {
+      background: rgba(14, 20, 38, 0.96);
+      border: 1px solid var(--border-accent);
+      color: #f8fafc;
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+    }
+
+    @media (max-width: 1100px) {
+      .cloud-banner-bar { grid-template-columns: 1fr 1fr; }
+      .dropzone-compact { grid-column: span 2; }
+      .kpi-4-grid { grid-template-columns: repeat(2, 1fr); }
+      .analytics-2-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 820px) {
+      .lock-panel { grid-template-columns: 1fr; max-width: 430px; }
+      .lock-left { display: none; }
+      .settings-2-grid { grid-template-columns: 1fr; }
+      .cloud-banner-bar { grid-template-columns: 1fr; }
+      .dropzone-compact { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-canvas"></div>
+
+  <!-- ========================================================================
+       1. ÉCRAN DE VERROUILLAGE DESKTOP
+       ======================================================================== -->
+  <div id="lock-screen">
+    <div id="lock-panel" class="lock-panel">
+      <div class="lock-left">
+        <div>
+          <div class="brand-row" style="margin-bottom:20px;">
+            <div class="brand-emblem">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-size:19px;font-weight:800;letter-spacing:-0.01em;">PiCloud Hub V20</div>
+              <div style="font-size:12px;color:var(--accent-sky);font-family:var(--font-mono);">Console Cloud Personnel • API Réelle</div>
+            </div>
+          </div>
+
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:18px;">
+            Console connectée en direct à ton <strong>Raspberry Pi 3B</strong> via tunnel HTTPS Tailscale, prête pour le montage des disques <strong>1,5 To</strong> et <strong>320 Go</strong> ainsi que tes <strong>Skills IA</strong>.
+          </p>
+
+          <div class="spec-list">
+            <div class="spec-item"><span>Matériel</span><strong>Raspberry Pi 3B (ARM64)</strong></div>
+            <div class="spec-item"><span>Disque Principal</span><strong>1,5 To (/mnt/cloud_main)</strong></div>
+            <div class="spec-item"><span>Disque Sauvegarde</span><strong>320 Go (/mnt/cloud_backup)</strong></div>
+            <div class="spec-item"><span>Tunnel HTTPS</span><strong>raspberrypi.tail73c64a.ts.net</strong></div>
+          </div>
+        </div>
+
+        <div style="font-size:11.5px;color:var(--text-muted);font-family:var(--font-mono);">
+          Astuce PC : tape directement <strong>2026</strong> au clavier puis Entrée.
+        </div>
+      </div>
+
+      <div class="lock-right">
+        <div style="margin-bottom:14px;">
+          <div class="input-label-row">
+            <span>Hôte API Raspberry Pi</span>
+            <span class="host-chips">
+              <button type="button" onclick="setTargetHost('https://raspberrypi.tail73c64a.ts.net')">Tailscale HTTPS</button>
+              <button type="button" onclick="setTargetHost('http://raspberrypi.local:8000')">LAN Local</button>
+            </span>
+          </div>
+          <input id="lock-host-input" class="ctrl-input" type="text" value="https://raspberrypi.tail73c64a.ts.net" />
+        </div>
+
+        <div>
+          <div class="input-label-row">
+            <span>Code d'accès Raspberry Pi 3</span>
+            <span id="lock-error-msg" style="color:var(--accent-rose);font-weight:700;"></span>
+          </div>
+          <input id="pin-text-input" class="ctrl-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="text-align:center;letter-spacing:10px;font-size:18px;" />
+
+          <div class="pin-dots-bar" id="pin-dots-bar">
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+          </div>
+
+          <div style="text-align:center;font-size:11.5px;color:var(--text-secondary);">
+            Code PIN : <strong id="default-pin-hint" style="color:var(--accent-sky);font-family:var(--font-mono);">2026</strong>
+          </div>
+
+          <div class="compact-keypad">
+            <button type="button" class="kp-key" onclick="appendPin('1')">1</button>
+            <button type="button" class="kp-key" onclick="appendPin('2')">2</button>
+            <button type="button" class="kp-key" onclick="appendPin('3')">3</button>
+            <button type="button" class="kp-key" onclick="appendPin('4')">4</button>
+            <button type="button" class="kp-key" onclick="appendPin('5')">5</button>
+            <button type="button" class="kp-key" onclick="appendPin('6')">6</button>
+            <button type="button" class="kp-key" onclick="appendPin('7')">7</button>
+            <button type="button" class="kp-key" onclick="appendPin('8')">8</button>
+            <button type="button" class="kp-key" onclick="appendPin('9')">9</button>
+            <button type="button" class="kp-key muted" onclick="resetPin()">Effacer</button>
+            <button type="button" class="kp-key" onclick="appendPin('0')">0</button>
+            <button type="button" class="kp-key muted" onclick="popPin()">⌫</button>
+          </div>
+
+          <button type="button" class="btn-primary-gradient" onclick="submitUnlock()">Accéder au Dashboard Cloud →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       2. WORKSPACE PRINCIPAL
+       ======================================================================== -->
+  <div id="workspace" class="hidden">
+    <aside id="sidebar">
+      <div class="sb-top-group">
+        <div class="sb-brand-bar">
+          <div class="sb-logo-wrap">
+            <div class="box-44 logo-gradient">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+            </div>
+            <div class="sb-label">
+              <div style="font-weight:800;font-size:15.5px;line-height:1.15;">PiCloud Hub</div>
+              <div style="font-size:11px;color:var(--accent-sky);font-family:var(--font-mono);">V20 • RPi 3B</div>
+            </div>
+          </div>
+
+          <button type="button" class="collapse-btn" onclick="toggleSidebar()" title="Rétracter / Déployer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+        </div>
+
+        <nav class="sb-nav">
+          <div id="active-pill" style="--pill-y: 0px;"></div>
+
+          <button type="button" class="nav-item active" data-tab="cloud" data-tip="Cloud & Fichiers (Alt+1)" onclick="switchTab('cloud', 0)">
+            <span class="nav-item-left">
+              <span class="box-44" style="width:42px;height:42px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
+                </svg>
+              </span>
+              <span class="sb-label">Cloud &amp; Fichiers</span>
+            </span>
+            <span class="kbd-tag sb-label">Alt+1</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="stats" data-tip="Statistiques Pi 3B (Alt+2)" onclick="switchTab('stats', 1)">
+            <span class="nav-item-left">
+              <span class="box-44" style="width:42px;height:42px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/>
+                </svg>
+              </span>
+              <span class="sb-label">Statistiques</span>
+            </span>
+            <span class="kbd-tag sb-label">Alt+2</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="settings" data-tip="Paramètres Système (Alt+3)" onclick="switchTab('settings', 2)">
+            <span class="nav-item-left">
+              <span class="box-44" style="width:42px;height:42px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+                </svg>
+              </span>
+              <span class="sb-label">Paramètres</span>
+            </span>
+            <span class="kbd-tag sb-label">Alt+3</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="sb-bottom-group">
+        <div class="sb-conn-box sb-label">
+          <div style="display:flex;align-items:center;gap:7px;font-weight:700;margin-bottom:3px;">
+            <span id="sb-live-dot" class="dot-live offline"></span>
+            <span id="sb-status-title">Connexion...</span>
+          </div>
+          <div id="sb-status-host" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);">raspberrypi.tail73c64a.ts.net</div>
+        </div>
+
+        <button type="button" class="sb-lock-btn" data-tip="Verrouiller la session" onclick="lockSession()">
+          <span class="box-44" style="width:42px;height:42px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <span class="sb-label">Verrouiller</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT VIEWPORT -->
+    <main class="main-viewport">
+      <header class="desktop-topbar">
+        <div class="topbar-heading">
+          <h1 id="header-title">Cloud &amp; Gestionnaire Dual-Drive</h1>
+          <p id="header-sub">Stockage principal 1,5 To (/mnt/cloud_main) &amp; sauvegarde 320 Go (/mnt/cloud_backup)</p>
+        </div>
+
+        <div class="topbar-metrics">
+          <span id="top-conn-pill" class="pill-badge rose"><span id="top-live-dot" class="dot-live offline"></span><span id="top-mode-badge">Hors ligne</span></span>
+          <span class="pill-badge sky" id="top-cpu-badge">CPU : --</span>
+          <span class="pill-badge sky" id="top-temp-badge">SoC : --</span>
+          <span class="pill-badge indigo" id="top-ram-badge">RAM : --</span>
+        </div>
+      </header>
+
+      <!-- ====================================================================
+           VUE 1 : CLOUD & FICHIERS
+           ==================================================================== -->
+      <section id="view-cloud" class="view-section">
+        <div class="cloud-banner-bar">
+          <!-- Disque Principal 1,5 To -->
+          <div id="drive-card-main" class="drive-banner-card active" onclick="selectDrive('main')">
+            <div class="drive-banner-top">
+              <div>
+                <div style="font-size:14.5px;font-weight:800;">Disque Principal • 1,5 To</div>
+                <div style="font-size:11px;color:var(--text-secondary);font-family:var(--font-mono);">/mnt/cloud_main</div>
+              </div>
+              <span class="pill-badge sky" id="tag-main" style="height:24px;font-size:11px;">Sélectionné</span>
+            </div>
+            <div class="bar-track"><div id="bar-main" class="bar-fill" style="width:0%;"></div></div>
+            <div class="drive-banner-meta">
+              <span id="meta-main-used">-- utilisés / --</span>
+              <strong id="meta-main-free" style="color:var(--accent-sky);">En attente HDD</strong>
+            </div>
+          </div>
+
+          <!-- Disque Sauvegarde 320 Go -->
+          <div id="drive-card-backup" class="drive-banner-card" onclick="selectDrive('backup')">
+            <div class="drive-banner-top">
+              <div>
+                <div style="font-size:14.5px;font-weight:800;">Disque Sauvegarde • 320 Go</div>
+                <div style="font-size:11px;color:var(--text-secondary);font-family:var(--font-mono);">/mnt/cloud_backup</div>
+              </div>
+              <span class="pill-badge" id="tag-backup" style="height:24px;font-size:11px;">Cliquer pour ouvrir</span>
+            </div>
+            <div class="bar-track"><div id="bar-backup" class="bar-fill emerald" style="width:0%;"></div></div>
+            <div class="drive-banner-meta">
+              <span id="meta-backup-used">-- utilisés / --</span>
+              <strong id="meta-backup-free" style="color:var(--accent-emerald);">En attente HDD</strong>
+            </div>
+          </div>
+
+          <!-- Dropzone -->
+          <div id="dropzone-box" class="dropzone-compact" onclick="document.getElementById('file-picker').click()">
+            <div style="font-size:22px;flex-shrink:0;">⬆️</div>
+            <div>
+              <div style="font-size:12.5px;font-weight:700;color:var(--text-primary);">Importer / Déposer</div>
+              <div style="font-size:11px;color:var(--text-secondary);line-height:1.35;">Glisse tes fichiers ou Skills IA ici</div>
+            </div>
+            <input id="file-picker" type="file" multiple class="hidden" onchange="handleUpload(this.files)" />
+          </div>
+        </div>
+
+        <!-- Explorateur pleine largeur -->
+        <div class="explorer-full-card">
+          <div class="explorer-toolbar">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <input id="file-search" class="ctrl-input" type="text" placeholder="Filtrer par nom..." style="width:240px;height:34px;font-family:var(--font-sans);" oninput="renderTable()" />
+              <select id="file-sort" class="ctrl-input" style="width:170px;height:34px;font-family:var(--font-sans);" onchange="renderTable()">
+                <option value="type">Trier : Dossiers d'abord</option>
+                <option value="name">Trier : Nom (A → Z)</option>
+                <option value="date">Trier : Date récente</option>
+              </select>
+              <button type="button" class="btn-tool" onclick="openSkillsFolder()">⚡ AI Skills</button>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button type="button" class="btn-tool" onclick="openFolderModal()">+ Nouveau Dossier</button>
+              <button type="button" class="btn-tool primary" onclick="document.getElementById('file-picker').click()">+ Importer Fichier</button>
+            </div>
+          </div>
+
+          <div class="crumb-bar" id="crumb-bar"></div>
+
+          <div class="file-table-wrap">
+            <table class="file-table">
+              <thead>
+                <tr>
+                  <th style="width:48%;">Nom</th>
+                  <th style="width:13%;">Type</th>
+                  <th style="width:13%;">Taille</th>
+                  <th style="width:12%;">Modifié</th>
+                  <th style="width:14%;text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="file-tbody">
+                <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-secondary);">Chargement...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VUE 2 : STATISTIQUES GÉNÉRALES
+           ==================================================================== -->
+      <section id="view-stats" class="view-section hidden">
+        <div class="kpi-4-grid">
+          <div class="panel-card">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);">
+              <span>Charge CPU (4 Cœurs)</span>
+              <span style="font-family:var(--font-mono);color:var(--accent-sky);">1.2 GHz</span>
+            </div>
+            <div class="kpi-value-big" id="stat-cpu">--</div>
+            <svg viewBox="0 0 220 38" width="100%" height="38" preserveAspectRatio="none">
+              <polyline id="spark-cpu" fill="none" stroke="#38bdf8" stroke-width="2.4" points="" />
+            </svg>
+          </div>
+
+          <div class="panel-card">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);">
+              <span>Température SoC</span>
+              <span id="stat-temp-badge" style="color:var(--text-muted);font-weight:700;">--</span>
+            </div>
+            <div class="kpi-value-big" id="stat-temp">--</div>
+            <div class="bar-track"><div id="stat-temp-bar" class="bar-fill emerald" style="width:0%;"></div></div>
+          </div>
+
+          <div class="panel-card">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);">
+              <span>Mémoire RAM LPDDR2</span>
+              <span id="stat-ram-total" style="font-family:var(--font-mono);">--</span>
+            </div>
+            <div class="kpi-value-big" id="stat-ram">--</div>
+            <div class="bar-track"><div id="stat-ram-bar" class="bar-fill" style="width:0%;"></div></div>
+          </div>
+
+          <div class="panel-card">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);">
+              <span>Tunnel Tailscale</span>
+              <span id="stat-net-badge" style="color:var(--text-muted);font-weight:700;">--</span>
+            </div>
+            <div class="kpi-value-big" style="font-size:20px;margin:10px 0;">100.95.90.111</div>
+            <div style="font-size:11.5px;color:var(--text-secondary);font-family:var(--font-mono);" id="stat-uptime">Uptime : --</div>
+          </div>
+        </div>
+
+        <div class="analytics-2-grid">
+          <div class="panel-card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:4px;">Télémétrie Temps Réel CPU &amp; RAM (Raspberry Pi 3B)</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">Courbe Cyan : Charge CPU (%) • Courbe Indigo : Occupation RAM (%)</div>
+            <svg viewBox="0 0 540 165" width="100%" height="165" style="background:rgba(6,9,19,0.75);border-radius:14px;border:1px solid var(--border-subtle);">
+              <line x1="0" y1="41" x2="540" y2="41" stroke="rgba(255,255,255,0.05)" />
+              <line x1="0" y1="82" x2="540" y2="82" stroke="rgba(255,255,255,0.05)" />
+              <line x1="0" y1="123" x2="540" y2="123" stroke="rgba(255,255,255,0.05)" />
+              <polyline id="chart-ram-poly" fill="none" stroke="#818cf8" stroke-width="2.2" points="" />
+              <polyline id="chart-cpu-poly" fill="none" stroke="#38bdf8" stroke-width="2.6" points="" />
+            </svg>
+          </div>
+
+          <div class="panel-card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:4px;">Capacité Cumulée des 2 Disques</div>
+            <div id="donut-sub" style="font-size:12px;color:var(--text-secondary);">En attente des disques durs...</div>
+
+            <div class="storage-breakdown">
+              <svg width="136" height="136" viewBox="0 0 120 120" style="flex-shrink:0;">
+                <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="14"/>
+                <circle id="donut-main" cx="60" cy="60" r="46" fill="none" stroke="#38bdf8" stroke-width="14" stroke-dasharray="0 289" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                <circle id="donut-backup" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="14" stroke-dasharray="0 289" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                <text id="donut-pct-txt" x="60" y="65" text-anchor="middle" fill="#f8fafc" font-size="17" font-weight="800">--</text>
+              </svg>
+
+              <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+                <div><span style="color:var(--accent-sky);font-weight:800;">●</span> Principal 1,5 To : <strong id="donut-main-txt">--</strong></div>
+                <div><span style="color:var(--accent-emerald);font-weight:800;">●</span> Sauvegarde 320 Go : <strong id="donut-backup-txt">--</strong></div>
+                <div><span style="color:var(--text-muted);font-weight:800;">●</span> Espace libre total : <strong id="donut-free-txt">--</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VUE 3 : PARAMÈTRES & CONTRÔLE SYSTÈME
+           ==================================================================== -->
+      <section id="view-settings" class="view-section hidden">
+        <div class="settings-2-grid">
+          <div class="panel-card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:14px;">Endpoints API Raspberry Pi 3B</div>
+            <div class="field-stack">
+              <label>URL Active (Tailscale HTTPS ou LAN)</label>
+              <input id="set-local-ip" class="ctrl-input" type="text" value="https://raspberrypi.tail73c64a.ts.net" />
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button type="button" class="btn-tool primary" onclick="saveHostSettings()">Enregistrer</button>
+              <button type="button" class="btn-tool" onclick="pingPiServer()">Tester la connexion API</button>
+              <span id="ping-result" style="font-size:12px;font-family:var(--font-mono);color:var(--text-secondary);"></span>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:14px;">Sécurité &amp; Code PIN d'accès</div>
+            <div class="field-stack">
+              <label>Nouveau Code PIN (4 chiffres)</label>
+              <input id="set-new-pin" class="ctrl-input" type="password" inputmode="numeric" maxlength="4" placeholder="Ex: 1234" />
+            </div>
+            <button type="button" class="btn-tool primary" onclick="changePin()">Mettre à jour le code PIN</button>
+          </div>
+
+          <div class="panel-card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:10px;">État des Points de Montage &amp; Rsync</div>
+            <div id="mount-status-list" style="font-size:12.5px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px;">
+              • <code>/mnt/cloud_main</code> : --<br/>
+              • <code>/mnt/cloud_backup</code> : --
+            </div>
+            <button type="button" class="btn-tool primary" onclick="triggerRsync()">Lancer synchronisation 1,5 To → 320 Go</button>
+          </div>
+
+          <div class="panel-card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:10px;">Alimentation &amp; Contrôle Système</div>
+            <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.55;margin-bottom:14px;">
+              Démonte proprement les disques durs avant de couper l'alimentation du Raspberry Pi 3B.
+            </p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button type="button" class="btn-tool btn-warn" onclick="openPowerConfirm('reboot')">Redémarrer le Pi (reboot)</button>
+              <button type="button" class="btn-tool btn-danger" onclick="openPowerConfirm('poweroff')">Éteindre proprement (poweroff)</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modal-folder" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:10px;">Créer un nouveau dossier</h3>
+      <input id="folder-name-input" class="ctrl-input" type="text" placeholder="Nom du dossier (ex: Projets_SI)" style="margin-bottom:14px;font-family:var(--font-sans);" />
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="btn-tool" onclick="closeModal('modal-folder')">Annuler</button>
+        <button type="button" class="btn-tool primary" onclick="confirmCreateFolder()">Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-power" class="modal-overlay hidden">
+    <div class="modal-dialog">
+      <h3 id="pwr-title" style="font-size:16px;font-weight:800;margin-bottom:8px;">Confirmation système</h3>
+      <p id="pwr-desc" style="font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:16px;"></p>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="btn-tool" onclick="closeModal('modal-power')">Annuler</button>
+        <button type="button" class="btn-tool btn-danger" id="pwr-confirm-btn">Exécuter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-stack"></div>
+
+  <script>
+    const DEFAULT_API = "https://raspberrypi.tail73c64a.ts.net";
+
+    const state = {
+      pin: localStorage.getItem('picloud_pin') || '2026',
+      pinEntry: '',
+      activeTab: 'cloud',
+      activeDrive: 'main',
+      path: [],
+      items: [],
+      connected: false,
+      cpuSeries: [],
+      ramSeries: []
+    };
+
+    function getApiBase() {
+      return (localStorage.getItem('picloud_host') || DEFAULT_API).replace(/\/+$/, '');
+    }
+
+    function formatSize(bytes) {
+      if (bytes === null || bytes === undefined || bytes === 0) return "--";
+      const units = ["o", "Ko", "Mo", "Go"];
+      let i = 0;
+      while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+      return bytes.toFixed(1) + " " + units[i];
+    }
+
+    function formatDate(ts) {
+      if (!ts) return "--";
+      return new Date(ts * 1000).toLocaleDateString('fr-FR');
+    }
+
+    /* ==========================================================================
+       1. LOCK SCREEN
+       ========================================================================== */
+    const pinTextInput = document.getElementById('pin-text-input');
+    document.getElementById('default-pin-hint').textContent = state.pin;
+    document.getElementById('lock-host-input').value = getApiBase();
+    document.getElementById('set-local-ip').value = getApiBase();
+    setTimeout(() => pinTextInput.focus(), 100);
+
+    function updatePinUI() {
+      const dots = document.querySelectorAll('#pin-dots-bar .pin-dot');
+      dots.forEach((d, idx) => d.classList.toggle('filled', idx < state.pinEntry.length));
+      pinTextInput.value = state.pinEntry;
+    }
+
+    function appendPin(d) {
+      if (state.pinEntry.length >= 4) return;
+      state.pinEntry += d;
+      updatePinUI();
+      if (state.pinEntry.length === 4) setTimeout(submitUnlock, 120);
+    }
+
+    function popPin() { state.pinEntry = state.pinEntry.slice(0, -1); updatePinUI(); }
+    function resetPin() { state.pinEntry = ''; updatePinUI(); }
+
+    pinTextInput.addEventListener('input', () => {
+      state.pinEntry = pinTextInput.value.replace(/\D/g, '').slice(0, 4);
+      updatePinUI();
+      if (state.pinEntry.length === 4) submitUnlock();
+    });
+
+    pinTextInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitUnlock(); });
+
+    function setTargetHost(url) {
+      document.getElementById('lock-host-input').value = url;
+      localStorage.setItem('picloud_host', url);
+    }
+
+    function submitUnlock() {
+      const host = document.getElementById('lock-host-input').value.trim();
+      if (host) {
+        localStorage.setItem('picloud_host', host);
+        document.getElementById('sb-status-host').textContent = host.replace(/^https?:\/\//, '');
+      }
+      if (state.pinEntry === state.pin) {
+        document.getElementById('lock-error-msg').textContent = '';
+        const ls = document.getElementById('lock-screen');
+        ls.classList.add('unlocking');
+        setTimeout(() => {
+          ls.classList.add('hidden');
+          document.getElementById('workspace').classList.remove('hidden');
+          refreshAll();
+        }, 240);
+      } else {
+        document.getElementById('lock-error-msg').textContent = 'PIN incorrect';
+        const panel = document.getElementById('lock-panel');
+        panel.classList.remove('shake');
+        void panel.offsetWidth;
+        panel.classList.add('shake');
+        resetPin();
+      }
+    }
+
+    function lockSession() {
+      resetPin();
+      const ls = document.getElementById('lock-screen');
+      ls.classList.remove('hidden', 'unlocking');
+      document.getElementById('workspace').classList.add('hidden');
+      setTimeout(() => pinTextInput.focus(), 80);
+    }
+
+    /* ==========================================================================
+       2. NAVIGATION & RACCOURCIS
+       ========================================================================== */
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+    function switchTab(tab, idx) {
+      state.activeTab = tab;
+      document.getElementById('active-pill').style.setProperty('--pill-y', `${idx * 54}px`);
+      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+      document.getElementById('view-cloud').classList.toggle('hidden', tab !== 'cloud');
+      document.getElementById('view-stats').classList.toggle('hidden', tab !== 'stats');
+      document.getElementById('view-settings').classList.toggle('hidden', tab !== 'settings');
+
+      const meta = {
+        cloud: ['Cloud & Gestionnaire Dual-Drive', 'Stockage principal 1,5 To (/mnt/cloud_main) & sauvegarde 320 Go (/mnt/cloud_backup)'],
+        stats: ['Statistiques Générales & Télémétrie', 'Monitoring temps réel Raspberry Pi 3B (ARM64)'],
+        settings: ['Paramètres & Administration Système', 'Configuration Tailscale HTTPS, sécurité PIN et montage disques']
+      };
+      document.getElementById('header-title').textContent = meta[tab][0];
+      document.getElementById('header-sub').textContent = meta[tab][1];
+      if (tab === 'stats') renderTelemetryCharts();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (document.getElementById('workspace').classList.contains('hidden')) return;
+      if (e.altKey && e.key === '1') { e.preventDefault(); switchTab('cloud', 0); }
+      if (e.altKey && e.key === '2') { e.preventDefault(); switchTab('stats', 1); }
+      if (e.altKey && e.key === '3') { e.preventDefault(); switchTab('settings', 2); }
+      if (e.key === 'Escape') { closeModal('modal-folder'); closeModal('modal-power'); }
+    });
+
+    /* ==========================================================================
+       3. TÉLÉMÉTRIE & DISQUES EN DIRECT (AFFICHAGE "--" SI ABSENT)
+       ========================================================================== */
+    function resetDisconnectedUI() {
+      state.connected = false;
+      document.getElementById('sb-live-dot').className = 'dot-live offline';
+      document.getElementById('top-live-dot').className = 'dot-live offline';
+      document.getElementById('sb-status-title').textContent = 'Pi Hors Ligne';
+      document.getElementById('top-mode-badge').textContent = 'Hors ligne (Active Tailscale)';
+      document.getElementById('top-conn-pill').className = 'pill-badge rose';
+
+      document.getElementById('top-cpu-badge').textContent = 'CPU : --';
+      document.getElementById('top-temp-badge').textContent = 'SoC : --';
+      document.getElementById('top-ram-badge').textContent = 'RAM : --';
+
+      document.getElementById('meta-main-used').textContent = '-- utilisés / --';
+      document.getElementById('meta-main-free').textContent = '--';
+      document.getElementById('bar-main').style.width = '0%';
+
+      document.getElementById('meta-backup-used').textContent = '-- utilisés / --';
+      document.getElementById('meta-backup-free').textContent = '--';
+      document.getElementById('bar-backup').style.width = '0%';
+
+      document.getElementById('stat-cpu').textContent = '--';
+      document.getElementById('stat-temp').textContent = '--';
+      document.getElementById('stat-temp-badge').textContent = '--';
+      document.getElementById('stat-temp-bar').style.width = '0%';
+      document.getElementById('stat-ram').textContent = '--';
+      document.getElementById('stat-ram-total').textContent = '--';
+      document.getElementById('stat-ram-bar').style.width = '0%';
+      document.getElementById('stat-net-badge').textContent = 'Hors ligne';
+      document.getElementById('stat-uptime').textContent = 'Uptime : --';
+
+      document.getElementById('donut-pct-txt').textContent = '--';
+      document.getElementById('donut-main-txt').textContent = '--';
+      document.getElementById('donut-backup-txt').textContent = '--';
+      document.getElementById('donut-free-txt').textContent = '--';
+    }
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch(`${getApiBase()}/api/status`);
+        if (!res.ok) throw new Error();
+        const d = await res.json();
+
+        state.connected = true;
+        document.getElementById('sb-live-dot').className = 'dot-live';
+        document.getElementById('top-live-dot').className = 'dot-live';
+        document.getElementById('sb-status-title').textContent = 'Connecté • HTTPS';
+        document.getElementById('top-mode-badge').textContent = 'Connecté • Tailscale';
+        document.getElementById('top-conn-pill').className = 'pill-badge emerald';
+
+        const cpu = d.cpu_percent !== undefined ? Math.round(d.cpu_percent) : null;
+        const temp = d.cpu_temp !== undefined ? Number(d.cpu_temp).toFixed(1) : null;
+        const ramPct = d.ram_percent !== undefined ? Math.round(d.ram_percent) : null;
+
+        document.getElementById('top-cpu-badge').textContent = cpu !== null ? `CPU : ${cpu}%` : 'CPU : --';
+        document.getElementById('top-temp-badge').textContent = temp !== null ? `SoC : ${temp} °C` : 'SoC : --';
+        document.getElementById('top-ram-badge').textContent = ramPct !== null ? `RAM : ${ramPct}%` : 'RAM : --';
+
+        // Disque Principal (1,5 To)
+        if (d.main_disk && d.main_disk.mounted) {
+          const pct = d.main_disk.total_gb ? Math.round((d.main_disk.used_gb / d.main_disk.total_gb) * 100) : 0;
+          document.getElementById('bar-main').style.width = `${pct}%`;
+          document.getElementById('meta-main-used').textContent = `${d.main_disk.used_gb} Go utilisés / ${d.main_disk.total_gb} Go`;
+          document.getElementById('meta-main-free').textContent = `${d.main_disk.free_gb} Go libres`;
+        } else {
+          document.getElementById('bar-main').style.width = '0%';
+          document.getElementById('meta-main-used').textContent = '-- utilisés / --';
+          document.getElementById('meta-main-free').textContent = 'HDD non monté (en attente)';
+        }
+
+        // Disque Backup (320 Go)
+        if (d.backup_disk && d.backup_disk.mounted) {
+          const pct = d.backup_disk.total_gb ? Math.round((d.backup_disk.used_gb / d.backup_disk.total_gb) * 100) : 0;
+          document.getElementById('bar-backup').style.width = `${pct}%`;
+          document.getElementById('meta-backup-used').textContent = `${d.backup_disk.used_gb} Go utilisés / ${d.backup_disk.total_gb} Go`;
+          document.getElementById('meta-backup-free').textContent = `${d.backup_disk.free_gb} Go libres`;
+        } else {
+          document.getElementById('bar-backup').style.width = '0%';
+          document.getElementById('meta-backup-used').textContent = '-- utilisés / --';
+          document.getElementById('meta-backup-free').textContent = 'HDD non monté (en attente)';
+        }
+
+        // Onglet Statistiques
+        document.getElementById('stat-cpu').textContent = cpu !== null ? `${cpu}%` : '--';
+        document.getElementById('stat-temp').textContent = temp !== null ? `${temp}°C` : '--';
+        document.getElementById('stat-temp-badge').textContent = temp !== null ? (temp > 70 ? 'Chaud' : 'Normal') : '--';
+        document.getElementById('stat-temp-badge').style.color = temp > 70 ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+        document.getElementById('stat-temp-bar').style.width = temp !== null ? `${Math.min(100, temp)}%` : '0%';
+
+        document.getElementById('stat-ram').textContent = ramPct !== null ? `${ramPct}%` : '--';
+        document.getElementById('stat-ram-total').textContent = d.ram_total_mb ? `${d.ram_total_mb} Mo` : '1024 Mo';
+        document.getElementById('stat-ram-bar').style.width = ramPct !== null ? `${ramPct}%` : '0%';
+        document.getElementById('stat-net-badge').textContent = 'Connecté';
+        document.getElementById('stat-net-badge').style.color = 'var(--accent-emerald)';
+        document.getElementById('stat-uptime').textContent = d.uptime ? `Uptime : ${d.uptime}` : 'Uptime : Actif';
+
+        // Donut 2 disques
+        const mMounted = d.main_disk && d.main_disk.mounted;
+        const bMounted = d.backup_disk && d.backup_disk.mounted;
+        document.getElementById('donut-main-txt').textContent = mMounted ? `${d.main_disk.used_gb} / ${d.main_disk.total_gb} Go` : '-- (non monté)';
+        document.getElementById('donut-backup-txt').textContent = bMounted ? `${d.backup_disk.used_gb} / ${d.backup_disk.total_gb} Go` : '-- (non monté)';
+
+        if (mMounted || bMounted) {
+          const tot = (mMounted ? d.main_disk.total_gb : 0) + (bMounted ? d.backup_disk.total_gb : 0);
+          const used = (mMounted ? d.main_disk.used_gb : 0) + (bMounted ? d.backup_disk.used_gb : 0);
+          const free = (mMounted ? d.main_disk.free_gb : 0) + (bMounted ? d.backup_disk.free_gb : 0);
+          const pct = tot ? Math.round((used / tot) * 100) : 0;
+          document.getElementById('donut-sub').textContent = `${used.toFixed(1)} Go utilisés sur ${tot.toFixed(1)} Go montés`;
+          document.getElementById('donut-pct-txt').textContent = `${pct}%`;
+          document.getElementById('donut-free-txt').textContent = `${free.toFixed(1)} Go`;
+          const mArc = tot && mMounted ? (d.main_disk.used_gb / tot) * 289 : 0;
+          const bArc = tot && bMounted ? (d.backup_disk.used_gb / tot) * 289 : 0;
+          document.getElementById('donut-main').setAttribute('stroke-dasharray', `${mArc} 289`);
+          document.getElementById('donut-backup').setAttribute('stroke-dasharray', `${bArc} 289`);
+          document.getElementById('donut-backup').setAttribute('stroke-dashoffset', `-${mArc}`);
+        } else {
+          document.getElementById('donut-sub').textContent = 'En attente du branchement des 2 disques durs';
+          document.getElementById('donut-pct-txt').textContent = '--';
+          document.getElementById('donut-free-txt').textContent = '--';
+          document.getElementById('donut-main').setAttribute('stroke-dasharray', '0 289');
+          document.getElementById('donut-backup').setAttribute('stroke-dasharray', '0 289');
+        }
+
+        // Onglet Paramètres
+        document.getElementById('mount-status-list').innerHTML = `
+          • <code>/mnt/cloud_main</code> : <strong>${mMounted ? `Monté (${d.main_disk.total_gb} Go)` : 'En attente du HDD 1,5 To'}</strong><br/>
+          • <code>/mnt/cloud_backup</code> : <strong>${bMounted ? `Monté (${d.backup_disk.total_gb} Go)` : 'En attente du HDD 320 Go'}</strong>
+        `;
+
+        if (cpu !== null) {
+          state.cpuSeries.push(cpu);
+          if (state.cpuSeries.length > 20) state.cpuSeries.shift();
+        }
+        if (ramPct !== null) {
+          state.ramSeries.push(ramPct);
+          if (state.ramSeries.length > 20) state.ramSeries.shift();
+        }
+        if (state.activeTab === 'stats') renderTelemetryCharts();
+      } catch (e) {
+        resetDisconnectedUI();
+      }
+    }
+
+    function renderTelemetryCharts() {
+      if (state.cpuSeries.length < 2) {
+        document.getElementById('spark-cpu').setAttribute('points', '');
+        document.getElementById('chart-cpu-poly').setAttribute('points', '');
+        document.getElementById('chart-ram-poly').setAttribute('points', '');
+        return;
+      }
+      const spark = state.cpuSeries.map((v, i) => `${(i / (state.cpuSeries.length - 1)) * 220},${38 - (v / 100) * 34}`).join(' ');
+      document.getElementById('spark-cpu').setAttribute('points', spark);
+
+      const cpuPts = state.cpuSeries.map((v, i) => `${(i / (state.cpuSeries.length - 1)) * 540},${158 - (v / 100) * 145}`).join(' ');
+      const ramPts = state.ramSeries.map((v, i) => `${(i / (state.ramSeries.length - 1)) * 540},${158 - (v / 100) * 145}`).join(' ');
+      document.getElementById('chart-cpu-poly').setAttribute('points', cpuPts);
+      document.getElementById('chart-ram-poly').setAttribute('points', ramPts);
+    }
+
+    /* ==========================================================================
+       4. EXPLORATEUR DE FICHIERS (API RÉELLE)
+       ========================================================================== */
+    function selectDrive(key) {
+      state.activeDrive = key;
+      state.path = [];
+      document.getElementById('drive-card-main').classList.toggle('active', key === 'main');
+      document.getElementById('drive-card-backup').classList.toggle('active-backup', key === 'backup');
+      document.getElementById('tag-main').textContent = key === 'main' ? 'Sélectionné' : 'Cliquer pour ouvrir';
+      document.getElementById('tag-main').className = key === 'main' ? 'pill-badge sky' : 'pill-badge';
+      document.getElementById('tag-backup').textContent = key === 'backup' ? 'Sélectionné' : 'Cliquer pour ouvrir';
+      document.getElementById('tag-backup').className = key === 'backup' ? 'pill-badge emerald' : 'pill-badge';
+      loadFiles();
+    }
+
+    async function loadFiles() {
+      const relPath = state.path.join('/');
+      const tbody = document.getElementById('file-tbody');
+      try {
+        const res = await fetch(`${getApiBase()}/api/files?drive=${encodeURIComponent(state.activeDrive)}&path=${encodeURIComponent(relPath)}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        state.items = data.items || [];
+        renderTable();
+      } catch (e) {
+        state.items = [];
+        renderBreadcrumb(0);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-secondary);">Impossible de joindre le Raspberry Pi (vérifie Tailscale).</td></tr>`;
+      }
+    }
+
+    function renderBreadcrumb(count) {
+      const rootName = state.activeDrive === 'main' ? 'Disque Principal (/mnt/cloud_main)' : 'Disque Backup (/mnt/cloud_backup)';
+      let crumbs = `<button type="button" class="crumb-link" onclick="jumpPath(-1)">${rootName}</button>`;
+      state.path.forEach((seg, i) => {
+        crumbs += `<span>/</span><button type="button" class="crumb-link" onclick="jumpPath(${i})">${seg}</button>`;
+      });
+      document.getElementById('crumb-bar').innerHTML = `
+        <div class="crumb-links-wrap">${crumbs}</div>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">${count} élément(s)</span>
+      `;
+    }
+
+    function renderTable() {
+      const query = document.getElementById('file-search').value.trim().toLowerCase();
+      const sortBy = document.getElementById('file-sort').value;
+      const list = [...state.items].filter(i => i.name.toLowerCase().includes(query));
+      renderBreadcrumb(list.length);
+
+      list.sort((a, b) => {
+        if (sortBy === 'type' && a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+        if (sortBy === 'date') return (b.modified || 0) - (a.modified || 0);
+        return a.name.localeCompare(b.name);
+      });
+
+      const tbody = document.getElementById('file-tbody');
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-secondary);">Dossier vide — glisse un fichier ou crée un dossier.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(item => {
+        const safeName = item.name.replace(/'/g, "\\'");
+        const fullRel = [...state.path, item.name].join('/');
+        return `
+          <tr class="data-row">
+            <td>
+              <div class="name-cell" onclick="${item.is_dir ? `enterDir('${safeName}')` : `downloadFile('${fullRel.replace(/'/g, "\\'")}')`}">
+                <span class="type-icon ${item.is_dir ? 'dir' : ''}">${item.is_dir ? '📁' : '📄'}</span>
+                <span class="file-title-txt">${item.name}</span>
+              </div>
+            </td>
+            <td style="color:var(--text-secondary);font-size:12px;">${item.is_dir ? 'Dossier' : 'Fichier'}</td>
+            <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">${item.is_dir ? '--' : formatSize(item.size)}</td>
+            <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">${formatDate(item.modified)}</td>
+            <td>
+              <div class="row-actions">
+                ${!item.is_dir ? `<button type="button" class="mini-btn" onclick="downloadFile('${fullRel.replace(/'/g, "\\'")}')">Télécharger</button>` : ''}
+                <button type="button" class="mini-btn danger" onclick="deleteItem('${fullRel.replace(/'/g, "\\'")}')">Suppr.</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function jumpPath(idx) { state.path = idx < 0 ? [] : state.path.slice(0, idx + 1); loadFiles(); }
+    function enterDir(name) { state.path.push(name); loadFiles(); }
+    function openSkillsFolder() { state.activeDrive = 'main'; state.path = ['ai_skills']; loadFiles(); }
+
+    function downloadFile(relPath) {
+      window.open(`${getApiBase()}/api/download?drive=${encodeURIComponent(state.activeDrive)}&path=${encodeURIComponent(relPath)}`, '_blank');
+    }
+
+    async function handleUpload(files) {
+      if (!files || !files.length) return;
+      const relPath = state.path.join('/');
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        await fetch(`${getApiBase()}/api/upload?drive=${encodeURIComponent(state.activeDrive)}&path=${encodeURIComponent(relPath)}`, {
+          method: 'POST',
+          body: fd
+        });
+      }
+      toast(`${files.length} fichier(s) envoyé(s) sur le Pi`);
+      refreshAll();
+    }
+
+    async function deleteItem(relPath) {
+      if (!confirm(`Supprimer "${relPath}" ?`)) return;
+      await fetch(`${getApiBase()}/api/files?drive=${encodeURIComponent(state.activeDrive)}&path=${encodeURIComponent(relPath)}`, { method: 'DELETE' });
+      toast('Élément supprimé');
+      refreshAll();
+    }
+
+    function openFolderModal() {
+      document.getElementById('folder-name-input').value = '';
+      openModal('modal-folder');
+      setTimeout(() => document.getElementById('folder-name-input').focus(), 60);
+    }
+
+    async function confirmCreateFolder() {
+      const name = document.getElementById('folder-name-input').value.trim().replace(/\s+/g, '_');
+      if (!name) return;
+      const relPath = [...state.path, name].join('/');
+      await fetch(`${getApiBase()}/api/mkdir?drive=${encodeURIComponent(state.activeDrive)}&path=${encodeURIComponent(relPath)}`, { method: 'POST' });
+      closeModal('modal-folder');
+      toast(`Dossier "${name}" créé`);
+      loadFiles();
+    }
+
+    const dz = document.getElementById('dropzone-box');
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('dragover'); handleUpload(e.dataTransfer.files); });
+
+    /* ==========================================================================
+       5. PARAMÈTRES & ACTIONS SYSTÈME
+       ========================================================================== */
+    function saveHostSettings() {
+      const ip = document.getElementById('set-local-ip').value.trim();
+      if (ip) {
+        localStorage.setItem('picloud_host', ip);
+        document.getElementById('lock-host-input').value = ip;
+        document.getElementById('sb-status-host').textContent = ip.replace(/^https?:\/\//, '');
+        toast('Adresse API mise à jour');
+        refreshAll();
+      }
+    }
+
+    async function pingPiServer() {
+      const out = document.getElementById('ping-result');
+      out.textContent = 'Test en cours...';
+      const t0 = performance.now();
+      try {
+        const res = await fetch(`${getApiBase()}/api/status`);
+        if (!res.ok) throw new Error();
+        const dt = Math.max(2, Math.round(performance.now() - t0));
+        out.style.color = 'var(--accent-emerald)';
+        out.textContent = `Connecté (${dt} ms)`;
+      } catch (e) {
+        out.style.color = 'var(--accent-rose)';
+        out.textContent = 'Hors ligne (vérifie Tailscale)';
+      }
+    }
+
+    function changePin() {
+      const p = document.getElementById('set-new-pin').value.replace(/\D/g, '');
+      if (p.length !== 4) { toast('Le code PIN doit contenir 4 chiffres'); return; }
+      state.pin = p;
+      localStorage.setItem('picloud_pin', p);
+      document.getElementById('default-pin-hint').textContent = p;
+      document.getElementById('set-new-pin').value = '';
+      toast(`Nouveau code PIN : ${p}`);
+    }
+
+    async function triggerRsync() {
+      try {
+        await fetch(`${getApiBase()}/api/sync`, { method: 'POST' });
+        toast('Synchronisation 1,5 To → 320 Go lancée');
+        fetchStatus();
+      } catch (e) {
+        toast('Erreur lors de la synchronisation');
+      }
+    }
+
+    function openPowerConfirm(action) {
+      document.getElementById('pwr-title').textContent = action === 'reboot' ? 'Redémarrer le Raspberry Pi 3B ?' : 'Éteindre proprement le Raspberry Pi 3B ?';
+      document.getElementById('pwr-desc').textContent = action === 'reboot'
+        ? 'Exécute "sudo reboot" sur le Raspberry Pi.'
+        : 'Exécute "sudo poweroff" et démonte proprement les disques durs avant coupure de courant.';
+      document.getElementById('pwr-confirm-btn').onclick = async () => {
+        closeModal('modal-power');
+        try { await fetch(`${getApiBase()}/api/power?action=${action}`, { method: 'POST' }); } catch (e) {}
+        toast(`Commande "${action}" envoyée`);
+      };
+      openModal('modal-power');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function toast(msg) {
+      const stack = document.getElementById('toast-stack');
+      const item = document.createElement('div');
+      item.className = 'toast-msg';
+      item.textContent = msg;
+      stack.appendChild(item);
+      setTimeout(() => item.remove(), 3200);
+    }
+
+    function refreshAll() {
+      fetchStatus();
+      loadFiles();
+    }
+
+    setInterval(() => {
+      if (!document.getElementById('workspace').classList.contains('hidden')) {
+        fetchStatus();
+      }
+    }, 3000);
+  </script>
+</body>
+</html>
