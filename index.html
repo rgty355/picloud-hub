@@ -1342,7 +1342,6 @@
        1. LOCK SCREEN
        ========================================================================== */
     const pinTextInput = document.getElementById('pin-text-input');
-    document.getElementById('default-pin-hint').textContent = state.pin;
     document.getElementById('lock-host-input').value = getApiBase();
     document.getElementById('set-local-ip').value = getApiBase();
     setTimeout(() => pinTextInput.focus(), 100);
@@ -1773,7 +1772,6 @@
       if (p.length !== 4) { toast('Le code PIN doit contenir 4 chiffres'); return; }
       state.pin = p;
       localStorage.setItem('picloud_pin', p);
-      document.getElementById('default-pin-hint').textContent = p;
       document.getElementById('set-new-pin').value = '';
       toast(`Nouveau code PIN : ${p}`);
     }
