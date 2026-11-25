@@ -864,6 +864,150 @@
     }
     .mini-btn:hover { background: rgba(56, 189, 248, 0.18); color: #fff; }
     .mini-btn.danger:hover { background: rgba(244, 63, 94, 0.22); color: #fda4af; border-color: rgba(244, 63, 94, 0.35); }
+        /* ==========================================================================
+       ONGLET RÉSEAU & DÉBIT — ANIMATIONS STYLE DASHBOARD V35
+       ========================================================================== */
+    @keyframes v35TitleSweep {
+      0% { clip-path: inset(0 100% 0 0); opacity: 0; transform: translate3d(-14px, 0, 0); }
+      100% { clip-path: inset(0 0% 0 0); opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+
+    @keyframes v35CardRise {
+      0% { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.965); filter: blur(7px); }
+      100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+    }
+
+    @keyframes v35PulseRing {
+      0% { transform: scale(0.92); opacity: 0.85; }
+      70% { transform: scale(1.75); opacity: 0; }
+      100% { transform: scale(1.75); opacity: 0; }
+    }
+
+    #view-network.v35-play .v35-title-anim {
+      animation: v35TitleSweep 0.62s var(--spring) both;
+    }
+
+    #view-network.v35-play .v35-stagger {
+      animation: v35CardRise 0.56s var(--spring) both;
+      animation-delay: calc(var(--stagger, 0) * 65ms);
+    }
+
+    .net-bento-top {
+      display: grid;
+      grid-template-columns: 1.55fr 0.95fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .net-left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .net-kpi-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .net-kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.25s var(--spring), border-color 0.2s, box-shadow 0.25s;
+    }
+
+    .net-kpi-card:hover {
+      transform: translate3d(0, -3px, 0);
+      border-color: var(--border-accent);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .net-num-roll {
+      font-size: 29px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
+      margin: 6px 0 4px;
+    }
+
+    .net-wave-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 18px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .net-side-monitor {
+      background: linear-gradient(165deg, rgba(16, 23, 46, 0.98) 0%, rgba(8, 12, 26, 0.99) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .net-nodes-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .net-node-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: transform 0.24s var(--spring), border-color 0.2s;
+    }
+
+    .net-node-card:hover {
+      transform: translate3d(0, -2px, 0);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .live-beacon {
+      position: relative;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-sky);
+      display: inline-block;
+    }
+
+    .live-beacon::after {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent-sky);
+      animation: v35PulseRing 1.8s ease-out infinite;
+    }
+
+    .net-ring-circle {
+      transition: stroke-dashoffset 0.85s var(--spring), stroke-dasharray 0.85s var(--spring);
+    }
+
+    @media (max-width: 1100px) {
+      .net-bento-top { grid-template-columns: 1fr; }
+      .net-kpi-3, .net-nodes-3 { grid-template-columns: 1fr; }
+    }
 
     /* ==========================================================================
        STATISTIQUES & PARAMÈTRES
@@ -1090,6 +1234,18 @@
               <span class="sb-label">Paramètres</span>
             </span>
             <span class="kbd-tag sb-label">Alt+3</span>
+          </button>
+
+                    <button type="button" class="nav-item" data-tab="network" data-tip="Débit & Latence (Alt+4)" onclick="switchTab('network', 3)">
+            <span class="nav-item-left">
+              <span class="box-44" style="width:42px;height:42px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0-4 4m4-4 4 4M5 12a7 7 0 0 1 14 0"/>
+                </svg>
+              </span>
+              <span class="sb-label">Débit &amp; Latence</span>
+            </span>
+            <span class="kbd-tag sb-label">Alt+4</span>
           </button>
         </nav>
       </div>
@@ -1346,6 +1502,156 @@
           </div>
         </div>
       </section>
+            <!-- ====================================================================
+           VUE 4 : DÉBIT & LATENCE (STYLE ANIMÉ DASHBOARD V35)
+           ==================================================================== -->
+      <section id="view-network" class="view-section hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div class="v35-title-anim">
+            <div style="font-size:17px;font-weight:800;letter-spacing:-0.01em;">
+              Diagnostic Liaison <span style="color:var(--accent-sky);font-style:italic;">Client ↔ Pi 3B</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);">
+              Mesure directe de la latence (ms), gigue et bande passante réelle sur ton serveur
+            </div>
+          </div>
+
+          <div class="v35-stagger" style="--stagger:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="pill-badge sky" id="net-live-pill"><span class="live-beacon"></span><span id="net-phase-label">Prêt au test</span></span>
+            <button type="button" class="btn-tool" id="net-ping-only-btn" onclick="runQuickPingBurst()">⚡ Ping Rapide (5x)</button>
+            <button type="button" class="btn-tool primary" id="net-full-test-btn" onclick="runFullSpeedTest()">🚀 Lancer Test Complet</button>
+          </div>
+        </div>
+
+        <div class="net-bento-top">
+          <!-- Colonne gauche : 3 cartes KPI animées + grand graphique d'ondes -->
+          <div class="net-left-col">
+            <div class="net-kpi-3">
+              <div class="net-kpi-card v35-stagger" style="--stagger:1;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-secondary);">
+                  <span>Latence (Ping)</span>
+                  <span class="pill-badge sky" style="height:22px;font-size:10.5px;">RTT</span>
+                </div>
+                <div class="net-num-roll" id="net-ping-val" style="color:var(--accent-sky);">-- ms</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);font-family:var(--font-mono);" id="net-jitter-val">Gigue : -- ms</div>
+              </div>
+
+              <div class="net-kpi-card v35-stagger" style="--stagger:2;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-secondary);">
+                  <span>Téléchargement</span>
+                  <span class="pill-badge emerald" style="height:22px;font-size:10.5px;">Pi → Toi</span>
+                </div>
+                <div class="net-num-roll" id="net-down-val" style="color:var(--accent-emerald);">-- Mo/s</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);font-family:var(--font-mono);" id="net-down-mbps">-- Mbps</div>
+              </div>
+
+              <div class="net-kpi-card v35-stagger" style="--stagger:3;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-secondary);">
+                  <span>Envoi (Upload)</span>
+                  <span class="pill-badge indigo" style="height:22px;font-size:10.5px;">Toi → Pi</span>
+                </div>
+                <div class="net-num-roll" id="net-up-val" style="color:#a5b4fc;">-- Mo/s</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);font-family:var(--font-mono);" id="net-up-mbps">-- Mbps</div>
+              </div>
+            </div>
+
+            <!-- Grand graphe d'ondes façon V35 -->
+            <div class="net-wave-card v35-stagger" style="--stagger:4;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <div style="font-weight:800;font-size:14.5px;">Courbe de Latence &amp; Stabilité en Direct</div>
+                  <div style="font-size:11.5px;color:var(--text-secondary);">Cyan : Ping (ms) • Indigo : Débit instantané</div>
+                </div>
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);" id="net-samples-count">0 mesure(s)</span>
+              </div>
+
+              <svg viewBox="0 0 560 155" width="100%" height="155" style="background:rgba(5,8,18,0.82);border-radius:14px;border:1px solid var(--border-subtle);">
+                <defs>
+                  <linearGradient id="netWaveGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.32"/>
+                    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <line x1="0" y1="38" x2="560" y2="38" stroke="rgba(255,255,255,0.05)" />
+                <line x1="0" y1="77" x2="560" y2="77" stroke="rgba(255,255,255,0.05)" />
+                <line x1="0" y1="116" x2="560" y2="116" stroke="rgba(255,255,255,0.05)" />
+                <polygon id="net-wave-area" fill="url(#netWaveGrad)" points="" />
+                <polyline id="net-wave-line" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" points="" />
+                <circle id="net-wave-dot" cx="-10" cy="-10" r="4.5" fill="#38bdf8" stroke="#fff" stroke-width="1.5" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Panneau latéral droit (inspiré de la carte sombre V35 avec jauge donut) -->
+          <div class="net-side-monitor v35-stagger" style="--stagger:5;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:14.5px;font-weight:800;">Score Liaison Serveur</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);font-family:var(--font-mono);" id="net-route-type">Tunnel Tailscale HTTPS</div>
+              </div>
+              <span class="pill-badge sky" id="net-quality-badge">En attente</span>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:center;gap:20px;padding:6px 0;">
+              <svg width="138" height="138" viewBox="0 0 120 120" style="flex-shrink:0;">
+                <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="13"/>
+                <circle id="net-ring-down" class="net-ring-circle" cx="60" cy="60" r="46" fill="none" stroke="#10b981" stroke-width="13" stroke-linecap="round" stroke-dasharray="0 289" transform="rotate(-90 60 60)"/>
+                <circle id="net-ring-up" class="net-ring-circle" cx="60" cy="60" r="46" fill="none" stroke="#6366f1" stroke-width="13" stroke-linecap="round" stroke-dasharray="0 289" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                <text id="net-score-txt" x="60" y="64" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="800">--%</text>
+              </svg>
+
+              <div style="display:flex;flex-direction:column;gap:9px;font-size:12px;">
+                <div><span style="color:var(--accent-emerald);font-weight:800;">●</span> Download : <strong id="net-leg-down">--</strong></div>
+                <div><span style="color:var(--accent-indigo);font-weight:800;">●</span> Upload : <strong id="net-leg-up">--</strong></div>
+                <div><span style="color:var(--accent-sky);font-weight:800;">●</span> Ping moy. : <strong id="net-leg-ping">--</strong></div>
+              </div>
+            </div>
+
+            <div style="background:rgba(6,9,19,0.72);border:1px solid var(--border-subtle);border-radius:13px;padding:11px 13px;font-size:11.5px;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Hôte cible</span><strong style="font-family:var(--font-mono);color:var(--accent-sky);" id="net-target-host">--</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Plafond USB 2.0 Pi 3B</span><strong style="font-family:var(--font-mono);">~35 Mo/s (280 Mbps)</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Dernier test</span><strong style="font-family:var(--font-mono);" id="net-last-run">Jamais</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 cartes inférieures façon V35 (maillons réseau + mini anneaux) -->
+        <div class="net-nodes-3">
+          <div class="net-node-card v35-stagger" style="--stagger:6;">
+            <div>
+              <div style="font-size:13px;font-weight:800;">1. Navigateur Client</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;" id="net-node-client">En ligne • HTTPS</div>
+            </div>
+            <svg width="46" height="46" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4.5"/>
+              <circle id="node-ring-1" class="net-ring-circle" cx="22" cy="22" r="17" fill="none" stroke="#38bdf8" stroke-width="4.5" stroke-dasharray="107 107" transform="rotate(-90 22 22)"/>
+            </svg>
+          </div>
+
+          <div class="net-node-card v35-stagger" style="--stagger:7;">
+            <div>
+              <div style="font-size:13px;font-weight:800;">2. Tunnel Chiffré</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;" id="net-node-tunnel">Tailscale WireGuard</div>
+            </div>
+            <svg width="46" height="46" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4.5"/>
+              <circle id="node-ring-2" class="net-ring-circle" cx="22" cy="22" r="17" fill="none" stroke="#6366f1" stroke-width="4.5" stroke-dasharray="0 107" transform="rotate(-90 22 22)"/>
+            </svg>
+          </div>
+
+          <div class="net-node-card v35-stagger" style="--stagger:8;">
+            <div>
+              <div style="font-size:13px;font-weight:800;">3. Raspberry Pi 3B</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;" id="net-node-pi">FastAPI Uvicorn :8000</div>
+            </div>
+            <svg width="46" height="46" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4.5"/>
+              <circle id="node-ring-3" class="net-ring-circle" cx="22" cy="22" r="17" fill="none" stroke="#10b981" stroke-width="4.5" stroke-dasharray="0 107" transform="rotate(-90 22 22)"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1498,15 +1804,18 @@
       document.getElementById('view-cloud').classList.toggle('hidden', tab !== 'cloud');
       document.getElementById('view-stats').classList.toggle('hidden', tab !== 'stats');
       document.getElementById('view-settings').classList.toggle('hidden', tab !== 'settings');
+      document.getElementById('view-network').classList.toggle('hidden', tab !== 'network');
 
       const meta = {
         cloud: ['Cloud & Gestionnaire Dual-Drive', 'Stockage principal 1,5 To (/mnt/cloud_main) & sauvegarde 320 Go (/mnt/cloud_backup)'],
         stats: ['Statistiques Générales & Télémétrie', 'Monitoring temps réel Raspberry Pi 3B (ARM64)'],
-        settings: ['Paramètres & Administration Système', 'Configuration Tailscale HTTPS, sécurité PIN et montage disques']
+        settings: ['Paramètres & Administration Système', 'Configuration Tailscale HTTPS, sécurité PIN et montage disques'],
+        network: ['Débit Réseau & Latence Serveur', 'Mesure temps réel ping (ms), gigue et vitesse de transfert Client ↔ Raspberry Pi 3B']
       };
       document.getElementById('header-title').textContent = meta[tab][0];
       document.getElementById('header-sub').textContent = meta[tab][1];
       if (tab === 'stats') renderTelemetryCharts();
+      if (tab === 'network') triggerNetworkTabEntrance();
     }
 
     document.addEventListener('keydown', (e) => {
@@ -1514,6 +1823,7 @@
       if (e.altKey && e.key === '1') { e.preventDefault(); switchTab('cloud', 0); }
       if (e.altKey && e.key === '2') { e.preventDefault(); switchTab('stats', 1); }
       if (e.altKey && e.key === '3') { e.preventDefault(); switchTab('settings', 2); }
+      if (e.altKey && e.key === '4') { e.preventDefault(); switchTab('network', 3); }
       if (e.key === 'Escape') { closeModal('modal-folder'); closeModal('modal-power'); }
     });
 
@@ -1886,6 +2196,180 @@
       item.textContent = msg;
       stack.appendChild(item);
       setTimeout(() => item.remove(), 3200);
+    }
+
+        /* ==========================================================================
+       6. MOTEUR DE TEST RÉSEAU & ANIMATIONS V35
+       ========================================================================== */
+    const netHistory = [];
+    let netTesting = false;
+
+    function animateRollNumber(el, target, decimals, suffix, duration = 620) {
+      const start = performance.now();
+      function frame(now) {
+        const p = Math.min(1, (now - start) / duration);
+        const ease = 1 - Math.pow(1 - p, 4);
+        const val = target * ease;
+        el.textContent = `${val.toFixed(decimals)} ${suffix}`;
+        if (p < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function triggerNetworkTabEntrance() {
+      const sec = document.getElementById('view-network');
+      sec.classList.remove('v35-play');
+      void sec.offsetWidth;
+      sec.classList.add('v35-play');
+      document.getElementById('net-target-host').textContent = getApiBase().replace(/^https?:\/\//, '');
+      if (netHistory.length === 0) runQuickPingBurst();
+      else renderNetWave();
+    }
+
+    function renderNetWave() {
+      const line = document.getElementById('net-wave-line');
+      const area = document.getElementById('net-wave-area');
+      const dot = document.getElementById('net-wave-dot');
+      document.getElementById('net-samples-count').textContent = `${netHistory.length} mesure(s)`;
+      if (!netHistory.length) return;
+
+      const maxVal = Math.max(50, ...netHistory) * 1.15;
+      const pts = netHistory.map((v, i) => {
+        const x = netHistory.length === 1 ? 280 : (i / (netHistory.length - 1)) * 540 + 10;
+        const y = 142 - (v / maxVal) * 124;
+        return [x, y];
+      });
+
+      const ptsStr = pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      line.setAttribute('points', ptsStr);
+      const last = pts[pts.length - 1];
+      const first = pts[0];
+      area.setAttribute('points', `${first[0].toFixed(1)},148 ${ptsStr} ${last[0].toFixed(1)},148`);
+      dot.setAttribute('cx', last[0].toFixed(1));
+      dot.setAttribute('cy', last[1].toFixed(1));
+    }
+
+    async function measureSinglePing() {
+      const t0 = performance.now();
+      const res = await fetch(`${getApiBase()}/api/net/ping?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error();
+      return Math.max(1, performance.now() - t0);
+    }
+
+    async function runQuickPingBurst() {
+      if (netTesting) return;
+      netTesting = true;
+      document.getElementById('net-phase-label').textContent = 'Mesure latence...';
+      const samples = [];
+      try {
+        for (let i = 0; i < 5; i++) {
+          const ms = await measureSinglePing();
+          samples.push(ms);
+          netHistory.push(ms);
+          if (netHistory.length > 24) netHistory.shift();
+          renderNetWave();
+          await new Promise(r => setTimeout(r, 110));
+        }
+        const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
+        const jitter = Math.max(...samples) - Math.min(...samples);
+        animateRollNumber(document.getElementById('net-ping-val'), avg, 1, 'ms');
+        document.getElementById('net-jitter-val').textContent = `Gigue : ${jitter.toFixed(1)} ms`;
+        document.getElementById('net-leg-ping').textContent = `${avg.toFixed(1)} ms`;
+        document.getElementById('net-phase-label').textContent = 'Liaison active';
+        document.getElementById('net-last-run').textContent = new Date().toLocaleTimeString('fr-FR');
+        document.getElementById('node-ring-2').setAttribute('stroke-dasharray', '92 107');
+        document.getElementById('node-ring-3').setAttribute('stroke-dasharray', '100 107');
+      } catch (e) {
+        document.getElementById('net-phase-label').textContent = 'Pi hors ligne';
+        toast('Impossible de mesurer : vérifie la connexion au Pi');
+      } finally {
+        netTesting = false;
+      }
+    }
+
+    async function runFullSpeedTest() {
+      if (netTesting) return;
+      netTesting = true;
+      const btn = document.getElementById('net-full-test-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Test en cours...';
+
+      try {
+        // 1. Ping & Gigue (6 paquets)
+        document.getElementById('net-phase-label').textContent = '1/3 • Latence & Gigue...';
+        const pings = [];
+        for (let i = 0; i < 6; i++) {
+          const ms = await measureSinglePing();
+          pings.push(ms);
+          netHistory.push(ms);
+          if (netHistory.length > 24) netHistory.shift();
+          renderNetWave();
+          await new Promise(r => setTimeout(r, 90));
+        }
+        const avgPing = pings.reduce((a, b) => a + b, 0) / pings.length;
+        const jitter = Math.max(...pings) - Math.min(...pings);
+        animateRollNumber(document.getElementById('net-ping-val'), avgPing, 1, 'ms');
+        document.getElementById('net-jitter-val').textContent = `Gigue : ${jitter.toFixed(1)} ms`;
+        document.getElementById('net-leg-ping').textContent = `${avgPing.toFixed(1)} ms`;
+
+        // 2. Download Pi -> Client (2 Mo)
+        document.getElementById('net-phase-label').textContent = '2/3 • Débit Download...';
+        const tDown0 = performance.now();
+        const downRes = await fetch(`${getApiBase()}/api/net/download?size_kb=2048&t=${Date.now()}`, { cache: 'no-store' });
+        const blob = await downRes.blob();
+        const dtDown = Math.max(0.01, (performance.now() - tDown0) / 1000);
+        const downMBs = (blob.size / (1024 * 1024)) / dtDown;
+        const downMbps = downMBs * 8;
+        animateRollNumber(document.getElementById('net-down-val'), downMBs, 2, 'Mo/s');
+        document.getElementById('net-down-mbps').textContent = `${downMbps.toFixed(1)} Mbps`;
+        document.getElementById('net-leg-down').textContent = `${downMBs.toFixed(2)} Mo/s`;
+
+        // 3. Upload Client -> Pi (1 Mo)
+        document.getElementById('net-phase-label').textContent = '3/3 • Débit Upload...';
+        const payload = new Uint8Array(1024 * 1024);
+        const tUp0 = performance.now();
+        await fetch(`${getApiBase()}/api/net/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: payload
+        });
+        const dtUp = Math.max(0.01, (performance.now() - tUp0) / 1000);
+        const upMBs = (payload.byteLength / (1024 * 1024)) / dtUp;
+        const upMbps = upMBs * 8;
+        animateRollNumber(document.getElementById('net-up-val'), upMBs, 2, 'Mo/s');
+        document.getElementById('net-up-mbps').textContent = `${upMbps.toFixed(1)} Mbps`;
+        document.getElementById('net-leg-up').textContent = `${upMBs.toFixed(2)} Mo/s`;
+
+        // Score & Donut animé
+        const pingScore = Math.max(10, Math.min(100, 100 - (avgPing - 15) * 0.6));
+        const speedScore = Math.min(100, ((downMBs + upMBs) / 20) * 100);
+        const score = Math.round(pingScore * 0.45 + speedScore * 0.55);
+
+        document.getElementById('net-score-txt').textContent = `${score}%`;
+        const badge = document.getElementById('net-quality-badge');
+        badge.textContent = score >= 75 ? 'Excellente' : score >= 45 ? 'Bonne' : 'Limitée';
+        badge.className = score >= 75 ? 'pill-badge emerald' : score >= 45 ? 'pill-badge sky' : 'pill-badge amber';
+
+        const downArc = Math.min(170, (downMBs / 25) * 170);
+        const upArc = Math.min(110, (upMBs / 25) * 110);
+        document.getElementById('net-ring-down').setAttribute('stroke-dasharray', `${downArc} 289`);
+        document.getElementById('net-ring-up').setAttribute('stroke-dasharray', `${upArc} 289`);
+        document.getElementById('net-ring-up').setAttribute('stroke-dashoffset', `-${downArc}`);
+
+        document.getElementById('node-ring-2').setAttribute('stroke-dasharray', `${Math.round(score * 1.07)} 107`);
+        document.getElementById('node-ring-3').setAttribute('stroke-dasharray', `${Math.round(Math.min(100, score + 6) * 1.07)} 107`);
+
+        document.getElementById('net-phase-label').textContent = 'Test terminé';
+        document.getElementById('net-last-run').textContent = new Date().toLocaleTimeString('fr-FR');
+        toast(`Test terminé : ${avgPing.toFixed(0)} ms • ↓ ${downMBs.toFixed(1)} Mo/s • ↑ ${upMBs.toFixed(1)} Mo/s`);
+      } catch (e) {
+        document.getElementById('net-phase-label').textContent = 'Erreur test';
+        toast('Échec du test : vérifie que server.py a bien les routes /api/net/*');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Lancer Test Complet';
+        netTesting = false;
+      }
     }
 
     function refreshAll() {
